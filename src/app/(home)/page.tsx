@@ -1,47 +1,11 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ProductCard, { Product } from "./components/product-card";
-import { Category } from "@/lib/types";
+import ProductCard from "./components/product-card";
+import { Category, Product } from "@/lib/types";
 
-const products: Product[] = [
-  {
-    id: "1",
-    name: "Margarita",
-    description: "this is very tasty pizza",
-    image: "/pizza-main.png",
-    price: 480,
-  },
-  {
-    id: "2",
-    name: "Margarita",
-    description: "this is very tasty pizza",
-    image: "/pizza-main.png",
-    price: 480,
-  },
-  {
-    id: "3",
-    name: "Margarita",
-    description: "this is very tasty pizza",
-    image: "/pizza-main.png",
-    price: 480,
-  },
-  {
-    id: "4",
-    name: "Margarita",
-    description: "this is very tasty pizza",
-    image: "/pizza-main.png",
-    price: 480,
-  },
-  {
-    id: "5",
-    name: "Margarita",
-    description: "this is very tasty pizza",
-    image: "/pizza-main.png",
-    price: 480,
-  },
-];
 export default async function Home() {
+  // todo: do concurrent request -> Promise.all
   const categoryResponse = await fetch(
     `${process.env.BACKEND_URL}/api/catalog/categories/all`,
     {
@@ -54,7 +18,21 @@ export default async function Home() {
     throw new Error("unable to fetch category data");
   }
   const categories: Category[] = await categoryResponse.json();
-  console.log("categories:", categories);
+  // todo: add pagination
+  // todo: add dynamic tenant id
+  const productsResponse = await fetch(
+    `${process.env.BACKEND_URL}/api/catalog/products/?perPage=100&tenantId=1`,
+    {
+      next: {
+        revalidate: 3600, //1 hour
+      },
+    }
+  );
+  if (!productsResponse.ok) {
+    throw new Error("unable to fetch category data");
+  }
+  const products: { data: Product[] } = await productsResponse.json();
+
   return (
     <>
       <section className="bg-white">
@@ -83,7 +61,7 @@ export default async function Home() {
       </section>
       <section>
         <div className="container py-12">
-          <Tabs defaultValue="pizza">
+          <Tabs defaultValue={categories[1]._id}>
             <TabsList>
               {categories.map((category) => {
                 return (
@@ -97,20 +75,29 @@ export default async function Home() {
                 );
               })}
             </TabsList>
-            <TabsContent value="pizza">
+            {categories.map((category) => {
+              return (
+                <TabsContent key={category._id} value={category._id}>
+                  <div className="grid grid-cols-4 gap-6 mt-6">
+                    {products.data
+                      .filter(
+                        (product) => product.category._id === category._id
+                      )
+                      .map((product) => (
+                        <ProductCard product={product} key={product._id} />
+                      ))}
+                  </div>
+                </TabsContent>
+              );
+            })}
+
+            {/* <TabsContent value="bevrages">
               <div className="grid grid-cols-4 gap-6 mt-6">
                 {products.map((product) => (
                   <ProductCard product={product} key={product.id} />
                 ))}
               </div>
-            </TabsContent>
-            <TabsContent value="bevrages">
-              <div className="grid grid-cols-4 gap-6 mt-6">
-                {products.map((product) => (
-                  <ProductCard product={product} key={product.id} />
-                ))}
-              </div>
-            </TabsContent>
+            </TabsContent> */}
           </Tabs>
         </div>
       </section>
