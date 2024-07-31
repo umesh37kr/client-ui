@@ -30,7 +30,7 @@ const ProductModal = ({ product }: { product: Product }) => {
                 src={product.image}
                 width={450}
                 height={450}
-                alt="Picture of the author"
+                alt={product.name}
               />
             </div>
             <div className="container w-2/3 py-5">
